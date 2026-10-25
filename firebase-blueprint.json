@@ -1,0 +1,21 @@
+{
+  "entities": {
+    "files": {
+      "title": "File Item",
+      "description": "Storage vault files and folders",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "size": { "type": "string" },
+        "rawBytes": { "type": "number" },
+        "type": { "type": "string" },
+        "category": { "type": "string", "enum": ["Photos", "Videos", "Documents", "Audio", "Other"] },
+        "date": { "type": "string" },
+        "starred": { "type": "boolean" },
+        "url": { "type": "string" }
+      },
+      "required": ["name", "size", "type", "category"]
+    }
+  }
+}

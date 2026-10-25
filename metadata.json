@@ -1,0 +1,6 @@
+{
+  "name": "SK Vault - Long-Term Storage",
+  "description": "AES-256 encrypted cold-storage repository for photos, videos, and critical documents with zero-knowledge preservation.",
+  "permissions": [],
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
