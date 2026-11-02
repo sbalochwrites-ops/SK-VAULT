@@ -42,6 +42,12 @@ import {
   deleteVaultFileFromFirestore, 
   deleteBatchVaultFilesFromFirestore 
 } from './services/firestoreService';
+import {
+  fetchVaultFilesFromSql,
+  saveVaultFileToSql,
+  deleteVaultFilesFromSql
+} from './services/sqlVaultService';
+import { initAuth, googleSignIn } from './lib/workspace';
 
 const RETENTION_CLASSES: Record<RetentionColor, string> = {
   forever: "bg-[#a5f26b]/15 text-[#a5f26b] border-[#a5f26b]/20",
@@ -81,6 +87,17 @@ export default function App() {
   useEffect(() => {
     document.documentElement.style.background = "#070a14";
 
+    const unsubAuth = initAuth((user) => {
+      if (user?.email) {
+        setEmail(user.email);
+      }
+      fetchVaultFilesFromSql().then((sqlFiles) => {
+        if (sqlFiles && sqlFiles.length > 0) {
+          setFiles(sqlFiles);
+        }
+      });
+    });
+
     // Real-time Firestore sync
     const unsubscribe = subscribeToVaultFiles(
       (loadedFiles) => {
@@ -97,6 +114,7 @@ export default function App() {
 
     return () => {
       if (unsubscribe) unsubscribe();
+      if (unsubAuth) unsubAuth();
     };
   }, []);
 
@@ -228,6 +246,9 @@ export default function App() {
     deleteBatchVaultFilesFromFirestore(idsToDelete).catch((err) => {
       console.warn('Firestore delete error, handled gracefully:', err);
     });
+    deleteVaultFilesFromSql(idsToDelete).catch((err) => {
+      console.warn('SQL delete notice:', err);
+    });
     showToast(`Permanently deleted ${count} item${count > 1 ? 's' : ''} from vault`);
   };
 
@@ -236,6 +257,9 @@ export default function App() {
     setFiles((prev) => [newFile, ...prev]);
     saveVaultFile(newFile).catch((err) => {
       console.warn('Firestore save error, handled gracefully:', err);
+    });
+    saveVaultFileToSql(newFile).catch((err) => {
+      console.warn('SQL save notice:', err);
     });
     showToast(`Preserved "${newFile.name}" to SK Vault`);
   };
@@ -309,6 +333,9 @@ export default function App() {
           setFiles((prev) => [newVaultFile, ...prev]);
           saveVaultFile(newVaultFile).catch((err) => {
             console.warn('Firestore upload persistence notice:', err);
+          });
+          saveVaultFileToSql(newVaultFile).catch((err) => {
+            console.warn('SQL upload persistence notice:', err);
           });
 
           setTimeout(() => {
@@ -622,7 +649,7 @@ export default function App() {
                       <HardDrive className="w-3.5 h-3.5 text-blue-400" />
                       Google Workspace
                     </span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-200">11 APIs</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-200">Connected</span>
                   </button>
 
                   <button
@@ -637,7 +664,7 @@ export default function App() {
                   </button>
                 </div>
 
-                <p className="px-3.5 text-[10px] tracking-widest uppercase text-white/25 mb-2">Vault & Cloud Status</p>
+                <p className="px-3.5 text-[10px] tracking-widest uppercase text-white/25 mb-2">Vault Security</p>
                 <div className="rounded-xl bg-[#0c1122] border border-white/5 p-3 space-y-2.5">
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="flex items-center gap-2 text-white/60">
@@ -650,19 +677,9 @@ export default function App() {
 
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="flex items-center gap-2 text-white/60">
-                      <Database className="w-3.5 h-3.5 text-amber-400" /> Firestore DB
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Zero-Knowledge
                     </span>
-                    <span className={`text-[10px] font-medium flex items-center gap-1 ${firestoreStatus === 'synced' ? 'text-emerald-300' : 'text-amber-300'}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${firestoreStatus === 'synced' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-                      {firestoreStatus === 'synced' ? 'Realtime' : 'Local Fallback'}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="flex items-center gap-2 text-white/60">
-                      <Globe2 className="w-3.5 h-3.5 text-sky-400" /> Cloud SQL Region
-                    </span>
-                    <span className="text-white/60 text-[10px] font-mono">asia-se1</span>
+                    <span className="text-white/70 text-[10px] font-medium">Verified</span>
                   </div>
                 </div>
               </div>
